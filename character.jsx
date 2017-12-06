@@ -40,8 +40,21 @@ export default class Character extends Component {
 	}
 	update = () => {
 		//this.state.characterState = this.props.store.characterState[this.props.index];
-		this.setState({
+		/*this.setState({
 			characterState:this.props.store.characterState[this.props.index]
+		});*/
+		/*this.setState((prevState, props)=>{
+			if(this.changeCharacterState())
+				return {characterState: this.props.store.characterState[this.props.index]}
+			else
+				return {characterState: prevState.characterState[this.props.index]};
+		});*/
+		this.setState((prevState, props)=>{
+			//this.componentDidMount();
+			if(prevState.characterState[this.props.index]!==this.props.store.characterState[this.props.index])
+				return {characterState: this.props.store.characterState[this.props.index]}
+			else
+				return {characterState: prevState.characterState[this.props.index]};
 		});
 		if(this.state.characterState == 8)
 			this.moveUp();
