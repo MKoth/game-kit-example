@@ -10,6 +10,7 @@ export default class Character extends Component {
 		store: PropTypes.object,
 		imgSrc: PropTypes.string,
 		index: PropTypes.number,
+		keys: PropTypes.object,
 	};
 	static contextTypes = {
 		engine: PropTypes.object,
@@ -23,11 +24,15 @@ export default class Character extends Component {
 		this.moveRight = this.moveRight.bind(this);
 		this.moveUp = this.moveUp.bind(this);
 		this.moveDown = this.moveDown.bind(this);
-		this.changeCharacterState = this.changeCharacterState.bind(this);
+		//this.changeCharacterState = this.changeCharacterState.bind(this);
 		this.state = {
 			characterState:11,
 			ticksPerFrame: 4,
 		}
+		if(this.props.keys)
+			this.charPhysicSize = 64;
+		else
+			this.charPhysicSize = 12;
 	}
 	getWrapperStyles() {
 		var x = this.props.store.characterPosition[this.props.index].x;
@@ -39,23 +44,26 @@ export default class Character extends Component {
 		};
 	}
 	update = () => {
-		//this.state.characterState = this.props.store.characterState[this.props.index];
-		/*this.setState({
-			characterState:this.props.store.characterState[this.props.index]
-		});*/
-		/*this.setState((prevState, props)=>{
-			if(this.changeCharacterState())
-				return {characterState: this.props.store.characterState[this.props.index]}
-			else
-				return {characterState: prevState.characterState[this.props.index]};
-		});*/
+		if(this.props.keys&&this.props.keys.status!==false){
+			if(this.props.keys.isDown(this.props.keys.RIGHT)||this.props.keys.isDown(76))
+				var newState = 11;
+			else if(this.props.keys.isDown(this.props.keys.LEFT)||this.props.keys.isDown(74))
+				var newState = 9;
+			else if(this.props.keys.isDown(this.props.keys.UP)||this.props.keys.isDown(73))
+				var newState = 8;
+			else if(this.props.keys.isDown(this.props.keys.DOWN)||this.props.keys.isDown(75))
+				var newState = 10;
+			if(newState)
+				this.props.store.characterState[this.props.index] = newState;
+		}
+		//this.characterState = this.props.store.characterState[this.props.index];
 		this.setState((prevState, props)=>{
-			//this.componentDidMount();
-			if(prevState.characterState[this.props.index]!==this.props.store.characterState[this.props.index])
+			if(prevState.characterState!==this.props.store.characterState[this.props.index])
 				return {characterState: this.props.store.characterState[this.props.index]}
 			else
-				return {characterState: prevState.characterState[this.props.index]};
+				return {characterState: prevState.characterState};
 		});
+
 		if(this.state.characterState == 8)
 			this.moveUp();
 		else if(this.state.characterState == 9)
@@ -68,12 +76,11 @@ export default class Character extends Component {
 	
 	moveRight() {
 		const position = this.props.store.characterPosition[this.props.index];
-		if(position.x<=(700-128))
+		if(position.x<=(700-110))
 			Matter.Body.setVelocity(this.body1.body, { x: 1, y: 0 });
 		else
 			Matter.Body.setVelocity(this.body1.body, { x: 0, y: 0 });
 		this.props.store.characterPosition[this.props.index] = this.body1.body.position;
-		this.changeCharacterState();
 	};
 	
 	moveLeft() {
@@ -83,7 +90,6 @@ export default class Character extends Component {
 		else
 			Matter.Body.setVelocity(this.body1.body, { x: 0, y: 0 });
 		this.props.store.characterPosition[this.props.index] = this.body1.body.position;
-		this.changeCharacterState();
 	};
 	
 	moveUp() {
@@ -93,31 +99,16 @@ export default class Character extends Component {
 		else
 			Matter.Body.setVelocity(this.body1.body, { x: 0, y: 0 });
 		this.props.store.characterPosition[this.props.index] = this.body1.body.position;
-		this.changeCharacterState();
 	};
 	
 	moveDown() {
 		const position = this.props.store.characterPosition[this.props.index];
-		if(position.y<=430)
+		if(position.y<=700-128)
 			Matter.Body.setVelocity(this.body1.body, { x: 0, y: 1 });
 		else
 			Matter.Body.setVelocity(this.body1.body, { x: 0, y: 0 });
 		this.props.store.characterPosition[this.props.index] = this.body1.body.position;
-		this.changeCharacterState();
 	};
-	
-	changeCharacterState() {
-		var timing = 2000;
-		if(Date.now() - this.props.store.timeStamp[this.props.index]>=timing){
-			var prevState = this.props.store.characterState[this.props.index];
-			var newState = this.props.store.characterState[this.props.index];
-			while(prevState==newState){
-				newState = Math.floor(Math.random()*(11-8+1)+8);
-			}
-			this.props.store.characterState[this.props.index] = newState;
-			this.props.store.timeStamp[this.props.index] = Date.now();
-		}
-	}
 	
 	componentDidMount() {
 		Matter.Events.on(this.context.engine, 'afterUpdate', this.update);
@@ -132,8 +123,10 @@ export default class Character extends Component {
 			<div id={"character"} style={this.getWrapperStyles()}>
 			<Body
 				args={[this.props.store.characterPosition[this.props.index].x, 
-				this.props.store.characterPosition[this.props.index].y, 128, 128]}
+				this.props.store.characterPosition[this.props.index].y, this.charPhysicSize, this.charPhysicSize]}
 				inertia={Infinity}
+				customId={this.props.index}
+				label={"character"}
 				ref={b => {
 					this.body1 = b;
 				}}
