@@ -39,11 +39,20 @@ export default class Character extends Component {
 		var y = this.props.store.characterPosition[this.props.index].y;
 		return {
 		  position: 'absolute',
-		  transform: 'translate('+x+'px, '+y+'px) translateZ(0)',
+		  transform: 'translate('+x*this.context.scale+'px, '+y*this.context.scale+'px) translateZ(0)',
 		  transformOrigin: 'top left',
 		};
 	}
 	update = () => {
+		if(this.props.store.mode == "restart"){
+			this.props.store.characterPosition = [{ x: 100, y: 100 },{ x: 200, y: 200 }];
+			this.props.store.characterState = [11,10];
+			this.body1.body.position = this.props.store.characterPosition[this.props.index];
+			this.props.store.stonesData = [];
+			return;
+		}
+		var x = this.props.store.characterPosition[this.props.index].x;
+		var y = this.props.store.characterPosition[this.props.index].y;
 		if(this.props.keys&&this.props.keys.status!==false){
 			if(this.props.keys.isDown(this.props.keys.RIGHT)||this.props.keys.isDown(76))
 				var newState = 11;
@@ -63,8 +72,9 @@ export default class Character extends Component {
 			else
 				return {characterState: prevState.characterState};
 		});
-
-		if(this.state.characterState == 8)
+		if(this.props.store.mode == "pause")
+			Matter.Body.setVelocity(this.body1.body, { x: 0, y: 0 });
+		else if(this.state.characterState == 8)
 			this.moveUp();
 		else if(this.state.characterState == 9)
 			this.moveLeft();
@@ -76,8 +86,9 @@ export default class Character extends Component {
 	
 	moveRight() {
 		const position = this.props.store.characterPosition[this.props.index];
-		if(position.x<=(700-110))
-			Matter.Body.setVelocity(this.body1.body, { x: 1, y: 0 });
+		if(this.props.store.checkIfObjectInsideTheScreen(this.props.index, "right", this.props.gameId))
+		//if(position.x<=(700-110))
+			Matter.Body.setVelocity(this.body1.body, { x: this.props.store.config.speed, y: 0 });
 		else
 			Matter.Body.setVelocity(this.body1.body, { x: 0, y: 0 });
 		this.props.store.characterPosition[this.props.index] = this.body1.body.position;
@@ -85,8 +96,9 @@ export default class Character extends Component {
 	
 	moveLeft() {
 		const position = this.props.store.characterPosition[this.props.index];
-		if(position.x>=0)
-			Matter.Body.setVelocity(this.body1.body, { x: -1, y: 0 });
+		if(this.props.store.checkIfObjectInsideTheScreen(this.props.index, "left", this.props.gameId))
+		//if(position.x>=0)
+			Matter.Body.setVelocity(this.body1.body, { x: -this.props.store.config.speed, y: 0 });
 		else
 			Matter.Body.setVelocity(this.body1.body, { x: 0, y: 0 });
 		this.props.store.characterPosition[this.props.index] = this.body1.body.position;
@@ -94,8 +106,9 @@ export default class Character extends Component {
 	
 	moveUp() {
 		const position = this.props.store.characterPosition[this.props.index];
-		if(position.y>=0)
-			Matter.Body.setVelocity(this.body1.body, { x: 0, y: -1 });
+		if(this.props.store.checkIfObjectInsideTheScreen(this.props.index, "top", this.props.gameId))
+		//if(position.y>=0)
+			Matter.Body.setVelocity(this.body1.body, { x: 0, y: -this.props.store.config.speed });
 		else
 			Matter.Body.setVelocity(this.body1.body, { x: 0, y: 0 });
 		this.props.store.characterPosition[this.props.index] = this.body1.body.position;
@@ -103,8 +116,9 @@ export default class Character extends Component {
 	
 	moveDown() {
 		const position = this.props.store.characterPosition[this.props.index];
-		if(position.y<=700-128)
-			Matter.Body.setVelocity(this.body1.body, { x: 0, y: 1 });
+		if(this.props.store.checkIfObjectInsideTheScreen(this.props.index, "bottom", this.props.gameId))
+		//if(position.y<=700-128)
+			Matter.Body.setVelocity(this.body1.body, { x: 0, y: this.props.store.config.speed });
 		else
 			Matter.Body.setVelocity(this.body1.body, { x: 0, y: 0 });
 		this.props.store.characterPosition[this.props.index] = this.body1.body.position;
@@ -120,7 +134,7 @@ export default class Character extends Component {
 
 	render() {
 		return (
-			<div id={"character"} style={this.getWrapperStyles()}>
+			<div id={"character-"+this.props.index+"-"+this.props.gameId} style={this.getWrapperStyles()}>
 			<Body
 				args={[this.props.store.characterPosition[this.props.index].x, 
 				this.props.store.characterPosition[this.props.index].y, this.charPhysicSize, this.charPhysicSize]}
@@ -136,7 +150,7 @@ export default class Character extends Component {
 					tileWidth={64}
 					tileHeight={64}
 					src={this.props.imgSrc}
-					scale={2}
+					scale={this.context.scale*2}
 					ticksPerFrame={this.state.ticksPerFrame}
 					state={this.state.characterState}
 					steps={[6,6,6,6,7,7,7,7,8,8,8,8,5,5,5,5,12,12,12,12,5]}

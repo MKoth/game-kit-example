@@ -6,14 +6,27 @@ import Character from "./character.jsx";
 import Stone from "./stone.jsx";
 import Grass from "./grass.jsx";
 import Score from "./score.jsx";
+import Info from "./info.jsx";
+import Controls from "./controls.jsx";
+import WinLoseScreen from './winLoseScreen.jsx';
 import Matter from 'matter-js';
-import GameStore from './store/game-store.jsx';
+import GameStore1 from './store/game-store1.jsx';
+import GameStore2 from './store/game-store2.jsx';
+import GameStore3 from './store/game-store3.jsx';
+import GameStore4 from './store/game-store4.jsx';
 import { observer } from 'mobx-react';
-
 @observer
 export default class Game extends Component {
 	constructor(props){
 		super(props);
+		if(this.props.gameId == 0)
+			var GameStore = GameStore1;
+		else if(this.props.gameId == 1)
+			var GameStore = GameStore2;
+		else if(this.props.gameId == 2)
+			var GameStore = GameStore3;
+		else if(this.props.gameId == 3)
+			var GameStore = GameStore4;
 		if(props.player1)
 			this.keyListener1 = {status:false};
 		else
@@ -23,6 +36,7 @@ export default class Game extends Component {
 		else
 			this.keyListener2 = new KeyListener();
 		this.updateHandler = this.updateHandler.bind(this);
+		
 	}
 	componentDidMount() {
 		if(this.keyListener1&&this.keyListener1.status!==false)
@@ -31,14 +45,14 @@ export default class Game extends Component {
 			this.keyListener1.RIGHT,
 			this.keyListener1.UP,
 			this.keyListener1.DOWN,
-			]);
+		]);
 		if(this.keyListener2&&this.keyListener2.status!==false)
 			this.keyListener2.subscribe([
 			73,
 			74,
 			75,
 			76,
-			]);
+		]);
 	}
 
 	componentWillUnmount() {
@@ -48,9 +62,19 @@ export default class Game extends Component {
 			this.keyListener2.unsubscribe();
 	}
   	render() {
+		if(this.props.gameId == 0)
+			var GameStore = GameStore1;
+		else if(this.props.gameId == 1)
+			var GameStore = GameStore2;
+		else if(this.props.gameId == 2)
+			var GameStore = GameStore3;
+		else if(this.props.gameId == 3)
+			var GameStore = GameStore4;
+		if(this.props.config)
+			GameStore.config = this.props.config;
 		return (
 			<Loop>
-				<Stage width={576} height={576} style={{ background: '#3a9bdc' }}>
+				<Stage style={{ background: '#3a9bdc' }}>
 					<World onUpdate={this.updateHandler} onInit={this.physicsInit} onCollision={this.colissionHandler}
 						gravity = {{
 							x:0,
@@ -65,6 +89,7 @@ export default class Game extends Component {
 							imgSrc = {"assets/character-blonde.png"}
 							key = {0}
 							index = {0}
+							gameId = {this.props.gameId}
 						/>
 						<Character
 							keys = {this.keyListener2}
@@ -72,12 +97,16 @@ export default class Game extends Component {
 							imgSrc = {"assets/character-brunette.png"}
 							key = {1}
 							index = {1}
+							gameId = {this.props.gameId}
 						/>
 						{GameStore.stonesData.map((stone, index) => {
-							return <Stone store={GameStore} key = {index} index = {index}/>;
+							return <Stone store={GameStore} gameId = {this.props.gameId} key = {index} index = {index}/>;
 						})}
 						<Score store={GameStore} left={'0'} right={"none"} playerId={0}/>
 						<Score store={GameStore} left={"none"} right={'0'} playerId={1}/>
+						<Info gameId={this.props.gameId}/>
+						<Controls store={GameStore}/>
+						<WinLoseScreen store = {GameStore}/>
 					</World>
 				</Stage>
 			</Loop>
@@ -87,44 +116,46 @@ export default class Game extends Component {
 		
 	};
 	colissionHandler(engine) {
-		if(engine.pairs[0].bodyA.label=="stone"){
-			GameStore.stonesData.splice(engine.pairs[0].bodyA.customId,1);
-			GameStore.score[engine.pairs[0].bodyB.customId]++;
-		}
-		if(engine.pairs[0].bodyB.label=="stone"){
-			GameStore.stonesData.splice(engine.pairs[0].bodyB.customId,1);
-			GameStore.score[engine.pairs[0].bodyA.customId]++;
-		}
 	};
 	updateHandler(engine){
-		if(this.props.player1)
-			var player1State = this.props.player1(engine.source.world);
-		if(this.props.player2)
-			var player2State = this.props.player2(engine.source.world);
-		if(player1State)
-			GameStore.characterState[0] = player1State;
-		if(player2State)
-			GameStore.characterState[1] = player2State;
-		engine.source.world.bodies.map((body, index) => {
-			if(body.label=="stone"){
-				if(body.position.x!=GameStore.stonesData[body.customId].x||
-				body.position.y!=GameStore.stonesData[body.customId].y){
-					Matter.Body.setPosition(body, GameStore.stonesData[body.customId])
-				}
-			}
-		});
-		var newTimestamp = Date.now();
-		if(newTimestamp - GameStore.timeStampData>=5000){
-			GameStore.timeStampData = Date.now();
-			if(GameStore.stonesData.length==0){
-				var stonesQuant = Math.floor(Math.random()*(5-3+1)+3);
-				for(var i=0;i<stonesQuant;i++){
-					var stoneObj = {x:0, y:0}
-					stoneObj.x = Math.floor(Math.random()*(6-0+1)+0)*100;
-					stoneObj.y = Math.floor(Math.random()*(6-0+1)+0)*100;
-					GameStore.stonesData.push(stoneObj);
-				}
-			}
+		if(this.props.gameId == 0)
+			var GameStore = GameStore1;
+		else if(this.props.gameId == 1)
+			var GameStore = GameStore2;
+		else if(this.props.gameId == 2)
+			var GameStore = GameStore3;
+		else if(this.props.gameId == 3)
+			var GameStore = GameStore4;
+		if(GameStore.mode == "pause")
+			return;
+		var WorldData = {
+			players: GameStore.characterPosition,
+			stones: GameStore.stonesData
 		}
+		if(this.props.player1)
+			var player1Direction = this.props.player1(WorldData);
+		if(this.props.player2)
+			var player2Direction = this.props.player2(WorldData);
+		if(player1Direction){
+			if(player1Direction.left)
+				GameStore.characterState[0] = 9;
+			else if(player1Direction.right)
+				GameStore.characterState[0] = 11;
+			else if(player1Direction.up)
+				GameStore.characterState[0] = 8;
+			else if(player1Direction.down)
+				GameStore.characterState[0] = 10;
+		}
+		if(player2Direction){
+			if(player2Direction.left)
+				GameStore.characterState[1] = 9;
+			else if(player2Direction.right)
+				GameStore.characterState[1] = 11;
+			else if(player2Direction.up)
+				GameStore.characterState[1] = 8;
+			else if(player2Direction.down)
+				GameStore.characterState[1] = 10;
+		}
+		GameStore.createNewStones();
 	}
 }
